@@ -1,47 +1,24 @@
 class StackMachine[T](final val items: List[T]) {
-  private def performBinary(op: (T, T) => T) = {
-    if (items.length < 2) {
-      None
-    } else {
-      Some(StackMachine(op(items(0), items(1)) :: items.slice(2, items.length)))
+  private def performBinary(op: (T, T) => T) = 
+    items match {
+      case x :: y :: tail => Some(StackMachine(op(x, y) :: tail))
+      case _ => None
     }
-  }
 
-  private def performUnary(op: T => T) = {
-    if (items.isEmpty) {
-      None
-    } else {
-      Some(StackMachine(op(items(0)) :: items.slice(1, items.length)))
+  private def performUnary(op: T => T) =
+    items match {
+      case x :: tail => Some(StackMachine(op(x) :: tail))
+      case _ => None
     }
-  }
 
-  def add()(implicit ops: Numeric[T] = null): Option[StackMachine[T]] = {
-    if (ops == null) None else performBinary(ops.plus)
-  }
+  def add()(implicit ops: Numeric[T]) = performBinary(ops.plus)
+  def sub()(implicit ops: Numeric[T]) = performBinary(ops.minus)
+  def mul()(implicit ops: Numeric[T]) = performBinary(ops.times)
+  def div()(implicit ops: Divisible[T]) = performBinary(ops.div)
 
-  def sub()(implicit ops: Numeric[T] = null): Option[StackMachine[T]] = {
-    if (ops == null) None else performBinary(ops.minus)
-  }
-
-  def mul()(implicit ops: Numeric[T] = null): Option[StackMachine[T]] = {
-    if (ops == null) None else performBinary(ops.times)
-  }
-
-  def div()(implicit ops: Divisible[T] = null): Option[StackMachine[T]] = {
-    if (ops == null) None else performBinary(ops.div)
-  }
-
-  def not()(implicit ops: Logical[T] = null): Option[StackMachine[T]] = {
-    if (ops == null) None else performUnary(ops.not)
-  }
-
-  def and()(implicit ops: Logical[T] = null): Option[StackMachine[T]] = {
-    if (ops == null) None else performBinary(ops.and)
-  }
-
-  def or()(implicit ops: Logical[T] = null): Option[StackMachine[T]] = {
-    if (ops == null) None else performBinary(ops.or)
-  }
+  def not()(implicit ops: Logical[T]) = performUnary(ops.not)
+  def and()(implicit ops: Logical[T]) = performBinary(ops.and)
+  def or()(implicit ops: Logical[T]) = performBinary(ops.or)
 }
 
 trait Divisible[T] {

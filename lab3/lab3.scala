@@ -62,8 +62,8 @@ object Main extends App {
   println(i3.items)
 
   val f1 = StackMachine(List(2.5, 0.5, 3.0, 1.4))
-  val f2 = f1.div().get;
-  val f3 = f2.mul().get;
+  val f2 = f1.div().get
+  val f3 = f2.mul().get
 
   println(f2.items)
   println(f3.items)

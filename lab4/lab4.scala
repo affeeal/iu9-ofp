@@ -17,8 +17,7 @@ object VarExpr {
 }
 
 object Main {
-  private def occurenciesOf(what: VarExpr, where: Expr): Int =
-    where match {
+  def occurenciesOf(what: VarExpr, where: Expr): Int = where match {
       case `what` => 1
       case BinaryExpr(_, lhs, rhs) => {
         occurenciesOf(what, lhs) + occurenciesOf(what, rhs)
@@ -29,8 +28,7 @@ object Main {
       case other => 0
     }
 
-  private def replace(what: VarExpr, by: Expr, where: Expr): Expr =
-    where match {
+  def replace(what: VarExpr, by: Expr, where: Expr): Expr = where match {
       case `what` => by
       case BinaryExpr(op, lhs, rhs) => {
         BinaryExpr(op, replace(what, by, lhs), replace(what, by, rhs))
@@ -41,9 +39,8 @@ object Main {
       case other => other
     }
 
-  def letsOptimize(what: Expr): Expr =
-    what match {
-      case BinaryExpr(op, lhs, rhs) if lhs == rhs => {
+  def letsOptimize(what: Expr): Expr = what match {
+      case BinaryExpr(op, lhs @ BinaryExpr(_, _, _), rhs) if lhs == rhs => {
         val v = VarExpr(VarExpr.nextName())
         LetExpr(v, letsOptimize(lhs), BinaryExpr(op, v, v))
       }
@@ -60,28 +57,35 @@ object Main {
     }
 
   def main(args: Array[String]): Unit = {
-    // Вынесение общих подвыражений:
-    // (x + y) * (x + y)
-    val ce1 = BinaryExpr(BinaryOp.Add, VarExpr("x"), VarExpr("y"))
-    val ce2 = BinaryExpr(BinaryOp.Mul, ce1, ce1)
-    println(letsOptimize(ce2))
+    // x + x → x + x
+    val e1 = BinaryExpr(BinaryOp.Add, VarExpr("x"), VarExpr("x"))
+    println(letsOptimize(e1))
+  
+    // (x + y) * (x + y) → let v0 = x + y in v0 * v0
+    val e2 = BinaryExpr(BinaryOp.Add, VarExpr("x"), VarExpr("y"))
+    val e3 = BinaryExpr(BinaryOp.Mul, e2, e2)
+    println(letsOptimize(e3))
 
-    // ((x + y) * (x + y) + (x + y) * (x + y)) + z
-    val ce3 = BinaryExpr(BinaryOp.Add, ce2, ce2)
-    val ce4 = BinaryExpr(BinaryOp.Add, ce3, VarExpr("z"))
-    println(letsOptimize(ce4))
+    // ((x + y) * (x + y) + (x + y) * (x + y)) * z →
+    // (let v0 = (x + y) * (x + y) in v0 + v0) * z →
+    // (let v0 = (let v1 = x + y in v1 * v1) in v0 + v0) * z
+    val e4 = BinaryExpr(BinaryOp.Add, e3, e3)
+    val e5 = BinaryExpr(BinaryOp.Mul, e4, VarExpr("z"))
+    println(letsOptimize(e5))
 
-    // Удаление единственной let-переменной:
-    // let x = (y + z) in a * x
-    val re1 = BinaryExpr(BinaryOp.Add, VarExpr("y"), VarExpr("z"))
-    val re2 = BinaryExpr(BinaryOp.Mul, VarExpr("a"), VarExpr("x"))
-    val re3 = LetExpr(VarExpr("x"), re1, re2)
-    println(letsOptimize(re3))
+    // let x = y + z in a * x → a * (y + z)
+    val e6 = BinaryExpr(BinaryOp.Add, VarExpr("y"), VarExpr("z"))
+    val e7 = BinaryExpr(BinaryOp.Mul, VarExpr("a"), VarExpr("x"))
+    val e8 = LetExpr(VarExpr("x"), e6, e7)
+    println(letsOptimize(e8))
 
-    // let y = (c + d) * (c + d) in (let x = (y + z) in a * x)
-    val re4 = BinaryExpr(BinaryOp.Add, VarExpr("c"), VarExpr("d"))
-    val re5 = BinaryExpr(BinaryOp.Mul, re4, re4)
-    val re6 = LetExpr(VarExpr("y"), re5, re3)
-    println(letsOptimize(re6))
+    // let y = (c + d) * (c + d) in (let x = y + z in a * x) →
+    // let x = (c + d) * (c + d) + z in a * x →
+    // a * ((c + d) * (c + d) + z) →
+    // a * ((let v0 = c + d in v0 * vo) + z)
+    val e9 = BinaryExpr(BinaryOp.Add, VarExpr("c"), VarExpr("d"))
+    val e10 = BinaryExpr(BinaryOp.Mul, e9, e9)
+    val e11 = LetExpr(VarExpr("y"), e10, e8)
+    println(letsOptimize(e11))
   }
 }

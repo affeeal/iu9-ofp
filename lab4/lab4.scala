@@ -1,5 +1,5 @@
 enum BinaryOp:
-  case Add, Mul
+  case Plus, Star
 
 abstract class Expr
 case class VarExpr(name: String) extends Expr
@@ -58,24 +58,24 @@ object Main {
 
   def main(args: Array[String]): Unit = {
     // x + x → x + x
-    val e1 = BinaryExpr(BinaryOp.Add, VarExpr("x"), VarExpr("x"))
+    val e1 = BinaryExpr(BinaryOp.Plus, VarExpr("x"), VarExpr("x"))
     println(letsOptimize(e1))
   
     // (x + y) * (x + y) → let v0 = x + y in v0 * v0
-    val e2 = BinaryExpr(BinaryOp.Add, VarExpr("x"), VarExpr("y"))
-    val e3 = BinaryExpr(BinaryOp.Mul, e2, e2)
+    val e2 = BinaryExpr(BinaryOp.Plus, VarExpr("x"), VarExpr("y"))
+    val e3 = BinaryExpr(BinaryOp.Star, e2, e2)
     println(letsOptimize(e3))
 
     // ((x + y) * (x + y) + (x + y) * (x + y)) * z →
     // (let v0 = (x + y) * (x + y) in v0 + v0) * z →
     // (let v0 = (let v1 = x + y in v1 * v1) in v0 + v0) * z
-    val e4 = BinaryExpr(BinaryOp.Add, e3, e3)
-    val e5 = BinaryExpr(BinaryOp.Mul, e4, VarExpr("z"))
+    val e4 = BinaryExpr(BinaryOp.Plus, e3, e3)
+    val e5 = BinaryExpr(BinaryOp.Star, e4, VarExpr("z"))
     println(letsOptimize(e5))
 
     // let x = y + z in a * x → a * (y + z)
-    val e6 = BinaryExpr(BinaryOp.Add, VarExpr("y"), VarExpr("z"))
-    val e7 = BinaryExpr(BinaryOp.Mul, VarExpr("a"), VarExpr("x"))
+    val e6 = BinaryExpr(BinaryOp.Plus, VarExpr("y"), VarExpr("z"))
+    val e7 = BinaryExpr(BinaryOp.Star, VarExpr("a"), VarExpr("x"))
     val e8 = LetExpr(VarExpr("x"), e6, e7)
     println(letsOptimize(e8))
 
@@ -83,8 +83,8 @@ object Main {
     // let x = (c + d) * (c + d) + z in a * x →
     // a * ((c + d) * (c + d) + z) →
     // a * ((let v0 = c + d in v0 * vo) + z)
-    val e9 = BinaryExpr(BinaryOp.Add, VarExpr("c"), VarExpr("d"))
-    val e10 = BinaryExpr(BinaryOp.Mul, e9, e9)
+    val e9 = BinaryExpr(BinaryOp.Plus, VarExpr("c"), VarExpr("d"))
+    val e10 = BinaryExpr(BinaryOp.Star, e9, e9)
     val e11 = LetExpr(VarExpr("y"), e10, e8)
     println(letsOptimize(e11))
   }
